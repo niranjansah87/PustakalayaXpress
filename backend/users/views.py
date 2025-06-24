@@ -63,3 +63,36 @@ class LogoutView(APIView):
     def post(self, request):
         
         return Response({"message": "Logged out"}, status=status.HTTP_200_OK)
+        
+        
+class RefreshView(APIView):
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+        if not refresh_token:
+            return Response({'detail': 'Refresh token is missing'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=["HS256"])
+            user_id = payload.get("user_id")
+
+            try:
+                user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            access_payload = {
+                'user_id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'exp': datetime.utcnow() + timedelta(minutes=15),
+                'iat': datetime.utcnow()
+            }
+
+            new_access_token = jwt.encode(access_payload, SECRET_KEY, algorithm="HS256")
+
+            return Response({'access': new_access_token}, status=status.HTTP_200_OK)
+
+        except jwt.ExpiredSignatureError:
+            return Response({'detail': 'Refresh token expired'}, status=status.HTTP_401_UNAUTHORIZED)
+        except jwt.InvalidTokenError:
+            return Response({'detail': 'Invalid refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
