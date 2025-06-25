@@ -1,0 +1,35 @@
+Backend Setup Instructions
+
+1. Open a terminal and navigate to the 'backend' directory:
+   cd backend
+
+2. Create the pustakalayaexpress database in your MySQL server before continuing.
+   You can do this by running the following command in your MySQL client:
+
+   CREATE DATABASE pustakalayaexpress CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+3. Create and activate a Python virtual environment:
+   python -m venv venv
+   venv\Scripts\activate   (on Windows)
+   # or
+   source venv/bin/activate   (on macOS/Linux)
+
+4. Install Python dependencies:
+   pip install -r requirements.txt
+
+5. Configure your database settings in 'pustakalayaexpress/settings.py' (e.g., MySQL credentials).
+
+6. Apply database migrations:
+   python manage.py makemigrations
+   python manage.py migrate
+
+7. (Optional) Create a superuser for admin access:
+   python manage.py createsuperuser
+
+8. Start the backend server:
+   python manage.py runserver
+
+The backend API will be available at:
+   http://localhost:8000
+
+Note: Ensure your MySQL database server is running and
