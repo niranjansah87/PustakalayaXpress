@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { Book } from '../types/book';
 import { API_ENDPOINTS } from '../config/api';
 
 const Books: React.FC = () => {
+  const navigate = useNavigate();
   const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,9 +23,14 @@ const Books: React.FC = () => {
       const token = localStorage.getItem('accessToken');
 
       if (!userId || !token) {
-        setError('User not authenticated.');
+        setError('User not authenticated. Please log in again.');
+        navigate('/login');
         return;
       }
+
+      console.log('Fetching books for userId:', userId);
+      console.log('Using token:', token);
+      console.log('API Endpoint:', API_ENDPOINTS.BOOKS.LIST_BY_USER(parseInt(userId)));
 
       const response = await axios.get(API_ENDPOINTS.BOOKS.LIST_BY_USER(parseInt(userId)), {
         headers: {
@@ -32,9 +38,18 @@ const Books: React.FC = () => {
         },
       });
 
+      console.log('Books response:', response.data);
       setBooks(response.data);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch books. Please try again.');
+      console.error('Fetch books error:', err.response || err);
+      const errorMessage =
+        err.response?.status === 401
+          ? 'User not authenticated. Please log in again.'
+          : err.response?.data?.detail || 'Failed to fetch books. Please try again.';
+      setError(errorMessage);
+      if (err.response?.status === 401) {
+        navigate('/login');
+      }
     } finally {
       setLoading(false);
     }
@@ -44,10 +59,12 @@ const Books: React.FC = () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setError('User not authenticated.');
+        setError('User not authenticated. Please log in again.');
+        navigate('/login');
         return;
       }
 
+      console.log('Deleting book with ID:', id);
       await axios.delete(API_ENDPOINTS.BOOKS.DELETE(id), {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -57,7 +74,11 @@ const Books: React.FC = () => {
       setBooks(books.filter(book => book.id !== id));
       setDeleteConfirm(null);
     } catch (err: any) {
+      console.error('Delete book error:', err.response || err);
       setError(err.response?.data?.detail || 'Failed to delete book. Please try again.');
+      if (err.response?.status === 401) {
+        navigate('/login');
+      }
     }
   };
 
@@ -67,7 +88,7 @@ const Books: React.FC = () => {
 
   const formatPrice = (price: number | string) => {
     const priceNum = typeof price === 'string' ? parseFloat(price) : price;
-    return isNaN(priceNum) ? '0.00' : `${priceNum.toFixed(2)}`; 
+    return isNaN(priceNum) ? '0.00' : `${priceNum.toFixed(2)}`;
   };
 
   if (loading) {

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
-import { BookFormData, Book } from '../types/book';
+import { BookFormData, Book, ErrorResponse } from '../types/book';
 import { API_ENDPOINTS } from '../config/api';
 
 const BookForm: React.FC = () => {
@@ -15,46 +15,76 @@ const BookForm: React.FC = () => {
     author: '',
     publication: '',
     published_date: '',
-    price: 0,
+    price: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fetchLoading, setFetchLoading] = useState(isEdit);
 
-  useEffect(() => {
-    if (isEdit && id) {
-      fetchBook(parseInt(id));
-    }
-  }, [id, isEdit]);
-
-  const fetchBook = async (bookId: number) => {
+  const fetchBook = useCallback(async (bookId: number) => {
     try {
       setFetchLoading(true);
       const token = localStorage.getItem('accessToken');
-      if (!token) {
-        setError('User not authenticated.');
+      const userId = localStorage.getItem('userId');
+      if (!token || !userId) {
+        setError('User not authenticated. Please log in again.');
+        navigate('/login');
         return;
       }
+
+      console.log('Fetching book with ID:', bookId);
+      console.log('User ID:', userId);
+      console.log('Using token:', token);
+      console.log('API Endpoint:', API_ENDPOINTS.BOOKS.DETAIL(bookId));
 
       const response = await axios.get(API_ENDPOINTS.BOOKS.DETAIL(bookId), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const book: Book = response.data;
 
+      console.log('Book response:', response.data);
+
       setFormData({
-        name: book.book_name, // Map book_name to name
-        author: book.author_name, // Map author_name to author
-        publication: book.publication_name, // Map publication_name to publication
+        name: book.book_name,
+        author: book.author_name,
+        publication: book.publication_name,
         published_date: book.published_date,
         price: typeof book.price === 'string' ? parseFloat(book.price) : book.price,
       });
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch book details. Please try again.');
+    } catch (err: unknown) {
+      console.error('Fetch book error:', err);
+      let errorMessage = 'Failed to fetch book details. Please try again.';
+      if (err instanceof Error && 'response' in err) {
+        const axiosError = err as { response?: { status: number; data: ErrorResponse } };
+        if (axiosError.response?.status === 404) {
+          errorMessage = 'Book not found or you do not have permission to edit it.';
+          navigate('/books');
+        } else if (axiosError.response?.status === 401) {
+          errorMessage = 'User not authenticated. Please log in again.';
+          navigate('/login');
+        } else if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
+      }
+      setError(errorMessage);
     } finally {
       setFetchLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    if (isEdit && id) {
+      const bookId = parseInt(id);
+      if (isNaN(bookId)) {
+        setError('Invalid book ID.');
+        setFetchLoading(false);
+        navigate('/books');
+        return;
+      }
+      fetchBook(bookId);
+    }
+  }, [id, isEdit, navigate, fetchBook]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,11 +94,16 @@ const BookForm: React.FC = () => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        setError('User not authenticated.');
+        setError('User not authenticated. Please log in again.');
+        navigate('/login');
         return;
       }
 
-      // Map formData to backend field names
+      if (formData.price === '') {
+        setError('Price is required.');
+        return;
+      }
+
       const payload = {
         book_name: formData.name,
         author_name: formData.author,
@@ -76,6 +111,8 @@ const BookForm: React.FC = () => {
         published_date: formData.published_date,
         price: parseFloat(formData.price.toString()),
       };
+
+      console.log('Submitting payload:', payload);
 
       if (isEdit && id) {
         await axios.put(API_ENDPOINTS.BOOKS.UPDATE(parseInt(id)), payload, {
@@ -87,8 +124,19 @@ const BookForm: React.FC = () => {
         });
       }
       navigate('/books');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || `Failed to ${isEdit ? 'update' : 'create'} book. Please try again.`);
+    } catch (err: unknown) {
+      console.error('Submit error:', err);
+      let errorMessage = `Failed to ${isEdit ? 'update' : 'create'} book. Please try again.`;
+      if (err instanceof Error && 'response' in err) {
+        const axiosError = err as { response?: { status: number; data: ErrorResponse } };
+        if (axiosError.response?.status === 401) {
+          errorMessage = 'User not authenticated. Please log in again.';
+          navigate('/login');
+        } else if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -98,7 +146,7 @@ const BookForm: React.FC = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' ? (value === '' ? 0 : parseFloat(value) || 0) : value,
+      [name]: name === 'price' ? (value === '' ? '' : parseFloat(value) || '') : value,
     }));
   };
 
@@ -204,6 +252,7 @@ const BookForm: React.FC = () => {
                 value={formData.price}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter price (e.g., 1900)"
               />
             </div>
 
