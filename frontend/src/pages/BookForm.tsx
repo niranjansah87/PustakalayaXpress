@@ -33,17 +33,14 @@ const BookForm: React.FC = () => {
         return;
       }
 
-      console.log('Fetching book with ID:', bookId);
-      console.log('User ID:', userId);
-      console.log('Using token:', token);
-      console.log('API Endpoint:', API_ENDPOINTS.BOOKS.DETAIL(bookId));
+      
 
       const response = await axios.get(API_ENDPOINTS.BOOKS.DETAIL(bookId), {
         headers: { Authorization: `Bearer ${token}` },
       });
       const book: Book = response.data;
 
-      console.log('Book response:', response.data);
+
 
       setFormData({
         name: book.book_name,
