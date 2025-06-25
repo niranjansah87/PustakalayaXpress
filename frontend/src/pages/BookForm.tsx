@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
 import { BookFormData, Book } from '../types/book';
-import { Save, ArrowLeft } from 'lucide-react';
+import { API_ENDPOINTS } from '../config/api';
 
 const BookForm: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,18 +31,26 @@ const BookForm: React.FC = () => {
   const fetchBook = async (bookId: number) => {
     try {
       setFetchLoading(true);
-      const response = await axios.get(`/api/books/${bookId}/`);
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setError('User not authenticated.');
+        return;
+      }
+
+      const response = await axios.get(API_ENDPOINTS.BOOKS.DETAIL(bookId), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const book: Book = response.data;
-      
+
       setFormData({
-        name: book.name,
-        author: book.author,
-        publication: book.publication,
+        name: book.book_name, // Map book_name to name
+        author: book.author_name, // Map author_name to author
+        publication: book.publication_name, // Map publication_name to publication
         published_date: book.published_date,
-        price: book.price,
+        price: typeof book.price === 'string' ? parseFloat(book.price) : book.price,
       });
     } catch (err: any) {
-      setError('Failed to fetch book details. Please try again.');
+      setError(err.response?.data?.detail || 'Failed to fetch book details. Please try again.');
     } finally {
       setFetchLoading(false);
     }
@@ -54,14 +62,33 @@ const BookForm: React.FC = () => {
     setLoading(true);
 
     try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setError('User not authenticated.');
+        return;
+      }
+
+      // Map formData to backend field names
+      const payload = {
+        book_name: formData.name,
+        author_name: formData.author,
+        publication_name: formData.publication,
+        published_date: formData.published_date,
+        price: parseFloat(formData.price.toString()),
+      };
+
       if (isEdit && id) {
-        await axios.put(`/api/books/${id}/`, formData);
+        await axios.put(API_ENDPOINTS.BOOKS.UPDATE(parseInt(id)), payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       } else {
-        await axios.post('/api/books/', formData);
+        await axios.post(API_ENDPOINTS.BOOKS.CREATE, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
       navigate('/books');
     } catch (err: any) {
-      setError(err.response?.data?.message || `Failed to ${isEdit ? 'update' : 'create'} book. Please try again.`);
+      setError(err.response?.data?.detail || `Failed to ${isEdit ? 'update' : 'create'} book. Please try again.`);
     } finally {
       setLoading(false);
     }
@@ -71,15 +98,15 @@ const BookForm: React.FC = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' ? parseFloat(value) || 0 : value,
+      [name]: name === 'price' ? (value === '' ? 0 : parseFloat(value) || 0) : value,
     }));
   };
 
   if (fetchLoading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="text-center py-12">
+          <div className="text-lg">Loading book details...</div>
         </div>
       </Layout>
     );
@@ -88,135 +115,115 @@ const BookForm: React.FC = () => {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">
-                  {isEdit ? 'Edit Book' : 'Add New Book'}
-                </h1>
-                <p className="mt-1 text-sm text-gray-600">
-                  {isEdit ? 'Update the book information below' : 'Fill in the details to add a new book'}
-                </p>
-              </div>
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              {isEdit ? 'Edit Book' : 'Add New Book'}
+            </h2>
+            <p className="text-gray-600 mt-1">
+              {isEdit ? 'Update the book information' : 'Fill in the details to add a new book'}
+            </p>
+          </div>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Book Name *
+              </label>
+              <input
+                type="text"
+                name="name"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter the book title"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Author Name *
+              </label>
+              <input
+                type="text"
+                name="author"
+                required
+                value={formData.author}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter the author's name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Publication Name *
+              </label>
+              <input
+                type="text"
+                name="publication"
+                required
+                value={formData.publication}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter the publisher's name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Published Date *
+              </label>
+              <input
+                type="date"
+                name="published_date"
+                required
+                value={formData.published_date}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price (NPR) *
+              </label>
+              <input
+                type="number"
+                name="price"
+                required
+                step="100"
+                min="0"
+                value={formData.price}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-6">
               <button
+                type="button"
                 onClick={() => navigate('/books')}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : (isEdit ? 'Update Book' : 'Add Book')}
               </button>
             </div>
-          </div>
-
-          <div className="px-6 py-6">
-            {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Book Name *
-                </label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  required
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Enter the book title"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="author" className="block text-sm font-medium text-gray-700 mb-2">
-                  Author Name *
-                </label>
-                <input
-                  type="text"
-                  id="author"
-                  name="author"
-                  required
-                  value={formData.author}
-                  onChange={handleChange}
-                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Enter the author's name"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="publication" className="block text-sm font-medium text-gray-700 mb-2">
-                  Publication Name *
-                </label>
-                <input
-                  type="text"
-                  id="publication"
-                  name="publication"
-                  required
-                  value={formData.publication}
-                  onChange={handleChange}
-                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="Enter the publisher's name"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="published_date" className="block text-sm font-medium text-gray-700 mb-2">
-                  Published Date *
-                </label>
-                <input
-                  type="date"
-                  id="published_date"
-                  name="published_date"
-                  required
-                  value={formData.published_date}
-                  onChange={handleChange}
-                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                  Price (USD) *
-                </label>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  required
-                  step="0.01"
-                  min="0"
-                  value={formData.price}
-                  onChange={handleChange}
-                  className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  placeholder="0.00"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => navigate('/books')}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {loading ? 'Saving...' : (isEdit ? 'Update Book' : 'Add Book')}
-                </button>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
       </div>
     </Layout>

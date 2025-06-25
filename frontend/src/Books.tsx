@@ -30,7 +30,7 @@ const Books = () => {
     }
   };
 
-  const deleteBook = async (id) => {
+  const deleteBook = async (id:number) => {
     if (window.confirm('Are you sure you want to delete this book?')) {
       try {
         await axios.delete(`/api/books/${id}/`);
