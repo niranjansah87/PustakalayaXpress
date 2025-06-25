@@ -33,7 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {user && (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Welcome, {user.name}</span>
+                <span className="text-sm text-gray-700">Welcome, <b>{user.name}</b></span>
                 <button
                   onClick={handleLogout}
                   className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
