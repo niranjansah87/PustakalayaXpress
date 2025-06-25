@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Layout from '../components/Layout';
-import { Book } from '../types/book';
+import { Book, ErrorResponse } from '../types/book';
 import { API_ENDPOINTS } from '../config/api';
 
 const Books: React.FC = () => {
@@ -12,11 +12,7 @@ const Books: React.FC = () => {
   const [error, setError] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetchBooks();
-  }, []);
-
-  const fetchBooks = async () => {
+  const fetchBooks = useCallback(async () => {
     try {
       setLoading(true);
       const userId = localStorage.getItem('userId');
@@ -28,9 +24,6 @@ const Books: React.FC = () => {
         return;
       }
 
-      console.log('Fetching books for userId:', userId);
-      console.log('Using token:', token);
-      console.log('API Endpoint:', API_ENDPOINTS.BOOKS.LIST_BY_USER(parseInt(userId)));
 
       const response = await axios.get(API_ENDPOINTS.BOOKS.LIST_BY_USER(parseInt(userId)), {
         headers: {
@@ -38,22 +31,29 @@ const Books: React.FC = () => {
         },
       });
 
-      console.log('Books response:', response.data);
+      
       setBooks(response.data);
-    } catch (err: any) {
-      console.error('Fetch books error:', err.response || err);
-      const errorMessage =
-        err.response?.status === 401
-          ? 'User not authenticated. Please log in again.'
-          : err.response?.data?.detail || 'Failed to fetch books. Please try again.';
-      setError(errorMessage);
-      if (err.response?.status === 401) {
-        navigate('/login');
+    } catch (err: unknown) {
+      console.error('Fetch books error:', err);
+      let errorMessage = 'Failed to fetch books. Please try again.';
+      if (err instanceof Error && 'response' in err) {
+        const axiosError = err as { response?: { status: number; data: ErrorResponse } };
+        if (axiosError.response?.status === 401) {
+          errorMessage = 'User not authenticated. Please log in again.';
+          navigate('/login');
+        } else if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
       }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchBooks();
+  }, [fetchBooks]);
 
   const handleDelete = async (id: number) => {
     try {
@@ -73,12 +73,19 @@ const Books: React.FC = () => {
 
       setBooks(books.filter(book => book.id !== id));
       setDeleteConfirm(null);
-    } catch (err: any) {
-      console.error('Delete book error:', err.response || err);
-      setError(err.response?.data?.detail || 'Failed to delete book. Please try again.');
-      if (err.response?.status === 401) {
-        navigate('/login');
+    } catch (err: unknown) {
+      console.error('Delete book error:', err);
+      let errorMessage = 'Failed to delete book. Please try again.';
+      if (err instanceof Error && 'response' in err) {
+        const axiosError = err as { response?: { status: number; data: ErrorResponse } };
+        if (axiosError.response?.status === 401) {
+          errorMessage = 'User not authenticated. Please log in again.';
+          navigate('/login');
+        } else if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        }
       }
+      setError(errorMessage);
     }
   };
 
