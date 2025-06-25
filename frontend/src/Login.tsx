@@ -33,7 +33,7 @@ const Login = () => {
           <img 
             src="/image.jpg" 
             alt="Pustakalayaexpress" 
-            className="mx-auto mb-4 h-16 w-auto"
+            className="mx-auto mb-4 h-16 w-16"
           />
           <h2 className="text-2xl font-bold text-gray-800">Login to Pustakalayaexpress</h2>
         </div>

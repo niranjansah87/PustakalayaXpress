@@ -7,9 +7,9 @@ export const API_ENDPOINTS = {
     REFRESH: `${API_BASE_URL}/api/auth/refresh/`,
   },
   BOOKS: {
-    LIST: `${API_BASE_URL}/api/books/`,
+    LIST_BY_USER: (userId: number) => `${API_BASE_URL}/api/books/user/${userId}/`,
     CREATE: `${API_BASE_URL}/api/books/`,
-    DETAIL: (id: number) => `${API_BASE_URL}/api/books/${id}/`,
+    DETAIL: `${API_BASE_URL}/api/books/`,
     UPDATE: (id: number) => `${API_BASE_URL}/api/books/${id}/update/`,
     DELETE: (id: number) => `${API_BASE_URL}/api/books/${id}/delete/`,
   },

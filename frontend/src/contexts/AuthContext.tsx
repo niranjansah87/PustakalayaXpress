@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 interface User {
   id: number;
@@ -37,12 +38,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Load tokens from localStorage on mount
     const storedToken = localStorage.getItem('access_token');
     const storedRefreshToken = localStorage.getItem('refresh_token');
     
     if (storedToken && storedRefreshToken) {
       setToken(storedToken);
       setRefreshToken(storedRefreshToken);
+      // Optionally, fetch user data if an endpoint exists
+      // For now, assume user data is not stored; set a placeholder or fetch if available
     }
     
     setLoading(false);
@@ -50,16 +54,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post('/api/auth/login/', {
+      const response = await axios.post(API_ENDPOINTS.AUTH.LOGIN, {
         email,
         password,
       });
 
-      const { access, refresh, user: userData } = response.data;
+      const { access, refresh } = response.data;
       
       setToken(access);
       setRefreshToken(refresh);
-      setUser(userData);
+      // Backend does not return user data in the provided LoginView; set minimal user data
+      setUser({ id: 0, email, name: '' }); // Adjust based on actual response if user data is included
       
       localStorage.setItem('access_token', access);
       localStorage.setItem('refresh_token', refresh);
@@ -70,17 +75,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (name: string, email: string, password: string) => {
     try {
-      const response = await axios.post('/api/auth/register/', {
+      const response = await axios.post(API_ENDPOINTS.AUTH.REGISTER, {
         name,
         email,
         password,
       });
 
-      const { access, refresh, user: userData } = response.data;
+      const { access, refresh } = response.data;
       
       setToken(access);
       setRefreshToken(refresh);
-      setUser(userData);
+      setUser({ id: 0, email, name }); // Adjust based on actual response if user data is included
       
       localStorage.setItem('access_token', access);
       localStorage.setItem('refresh_token', refresh);
@@ -95,6 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setRefreshToken(null);
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    // No need to call logout endpoint since it only returns a message
   };
 
   const refreshAuthToken = async () => {
@@ -103,7 +109,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('No refresh token available');
       }
 
-      const response = await axios.post('/api/auth/refresh/', {
+      const response = await axios.post(API_ENDPOINTS.AUTH.REFRESH, {
         refresh: refreshToken,
       });
 
@@ -122,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const requestInterceptor = axios.interceptors.request.use(
       (config) => {
-        if (token && config.url?.startsWith('/api/')) {
+        if (token && config.url?.includes('/api/')) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -170,3 +176,5 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export default AuthProvider;
