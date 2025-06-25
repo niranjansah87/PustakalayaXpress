@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 
 interface LayoutProps {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuth';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -20,7 +20,7 @@ const Register: React.FC = () => {
     try {
       await register(name, email, password);
       navigate('/books');
-    } catch (err: any) {
+    } catch {
       setError('Registration failed. Please try again.');
     } finally {
       setLoading(false);
@@ -30,15 +30,14 @@ const Register: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        {/* Logo Section */}
+        
         <div className="text-center mb-8">
           <img 
             src="/image.jpg" 
             alt="Pustakalayaexpress" 
-            className="mx-auto mb-4 h-16 w-16 rounded-lg object-cover"
+            className="mx-auto mb-4 h-16 w-full rounded-lg object-cover"
           />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Pustakalayaexpress</h1>
-          <p className="text-gray-600">Books Management System</p>
+        
         </div>
 
         <h2 className="text-xl font-semibold text-center mb-6">Create New Account</h2>
