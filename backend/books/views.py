@@ -49,3 +49,14 @@ class BookDelete(APIView):
         book = get_object_or_404(Book, pk=pk, created_by=user)
         book.delete()
         return Response({'message': 'Book deleted successfully'}, status=status.HTTP_200_OK)
+
+
+class BookListByUser(APIView):
+    def get(self, request, user_id):
+        user = get_user_from_token(request)
+        if not user or user.id != user_id:
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        books = Book.objects.filter(created_by=user)
+        serializer = BookSerializer(books, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
