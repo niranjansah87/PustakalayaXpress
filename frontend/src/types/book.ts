@@ -1,17 +1,15 @@
 export interface Book {
   id: number;
-  name: string;
-  author: string;
-  publication: string;
+  book_name: string; 
+  author_name: string; 
+  publication_name: string; 
   published_date: string;
-  price: number;
-  created_at: string;
-  updated_at: string;
+  price: number | string;
 }
 
 export interface BookFormData {
-  name: string;
-  author: string;
+  name: string; 
+  author: string; 
   publication: string;
   published_date: string;
   price: number;

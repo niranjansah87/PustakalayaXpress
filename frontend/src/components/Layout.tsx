@@ -1,14 +1,12 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Book } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
-  title?: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, title = 'Books Manager' }) => {
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -18,26 +16,31 @@ const Layout: React.FC<LayoutProps> = ({ children, title = 'Books Manager' }) =>
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link to="/books" className="flex items-center space-x-2">
-                <Book className="h-6 w-6 text-blue-600" />
-                <span className="font-semibold text-gray-900">{title}</span>
-              </Link>
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <img 
+                src="/image.jpg" 
+                alt="Pustakalayaexpress" 
+                className="h-12 w-full rounded-lg object-cover"
+              />
+              <div>
+                {/* <h1 className="text-xl font-bold text-gray-900">Pustakalayaexpress</h1> */}
+                {/* <p className="text-sm text-gray-600">Books Management System</p> */}
+              </div>
             </div>
             
             {user && (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Hello, {user.name}</span>
+                <span className="text-sm text-gray-700">Welcome, {user.name}</span>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center space-x-1 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
-                  <LogOut className="h-4 w-4" />
-                  <span className="text-sm">Logout</span>
+                  Logout
                 </button>
               </div>
             )}
@@ -45,7 +48,8 @@ const Layout: React.FC<LayoutProps> = ({ children, title = 'Books Manager' }) =>
         </div>
       </header>
       
-      <main className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Main Content */}
+      <main className="max-w-6xl mx-auto py-6 px-4">
         {children}
       </main>
     </div>

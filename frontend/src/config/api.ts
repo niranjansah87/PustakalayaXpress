@@ -7,7 +7,7 @@ export const API_ENDPOINTS = {
     REFRESH: `${API_BASE_URL}/api/auth/refresh/`,
   },
   BOOKS: {
-    LIST_BY_USER: (userId: number) => `${API_BASE_URL}/api/books/user/${userId}/`,
+    LIST_BY_USER: (userId: number) => `${API_BASE_URL}/api/books/${userId}/`,
     CREATE: `${API_BASE_URL}/api/books/`,
     DETAIL: `${API_BASE_URL}/api/books/`,
     UPDATE: (id: number) => `${API_BASE_URL}/api/books/${id}/update/`,

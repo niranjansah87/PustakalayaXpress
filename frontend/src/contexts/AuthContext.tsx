@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import { jwtDecode } from 'jwt-decode'; 
 
 interface User {
   id: number;
@@ -31,6 +32,14 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+interface JwtPayload {
+  user_id: number;
+  email: string;
+  name: string;
+  exp: number;
+  iat: number;
+}
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -38,17 +47,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load tokens from localStorage on mount
-    const storedToken = localStorage.getItem('access_token');
-    const storedRefreshToken = localStorage.getItem('refresh_token');
-    
-    if (storedToken && storedRefreshToken) {
-      setToken(storedToken);
-      setRefreshToken(storedRefreshToken);
-      // Optionally, fetch user data if an endpoint exists
-      // For now, assume user data is not stored; set a placeholder or fetch if available
+    // Load tokens and user data from localStorage on mount
+    const storedToken = localStorage.getItem('accessToken');
+    const storedRefreshToken = localStorage.getItem('refreshToken');
+    const storedUserId = localStorage.getItem('userId');
+
+    if (storedToken && storedRefreshToken && storedUserId) {
+      try {
+        const decoded: JwtPayload = jwtDecode(storedToken);
+        setToken(storedToken);
+        setRefreshToken(storedRefreshToken);
+        setUser({
+          id: decoded.user_id,
+          email: decoded.email,
+          name: decoded.name,
+        });
+      } catch (error) {
+        console.error('Invalid token:', error);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userId');
+      }
     }
-    
+
     setLoading(false);
   }, []);
 
@@ -60,14 +81,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { access, refresh } = response.data;
-      
+      const decoded: JwtPayload = jwtDecode(access); 
+
       setToken(access);
       setRefreshToken(refresh);
-      // Backend does not return user data in the provided LoginView; set minimal user data
-      setUser({ id: 0, email, name: '' }); // Adjust based on actual response if user data is included
-      
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
+      setUser({
+        id: decoded.user_id,
+        email: decoded.email,
+        name: decoded.name,
+      });
+
+      localStorage.setItem('accessToken', access);
+      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('userId', String(decoded.user_id)); // Store userId
     } catch (error) {
       throw error;
     }
@@ -82,13 +108,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { access, refresh } = response.data;
-      
+      const decoded: JwtPayload = jwtDecode(access); // Decode JWT to get user data
+
       setToken(access);
       setRefreshToken(refresh);
-      setUser({ id: 0, email, name }); // Adjust based on actual response if user data is included
-      
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
+      setUser({
+        id: decoded.user_id,
+        email: decoded.email,
+        name: decoded.name,
+      });
+
+      localStorage.setItem('accessToken', access);
+      localStorage.setItem('refreshToken', refresh);
+      localStorage.setItem('userId', String(decoded.user_id)); // Store userId
     } catch (error) {
       throw error;
     }
@@ -98,9 +130,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null);
     setToken(null);
     setRefreshToken(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    // No need to call logout endpoint since it only returns a message
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('userId');
   };
 
   const refreshAuthToken = async () => {
@@ -114,9 +146,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       const { access } = response.data;
+      const decoded: JwtPayload = jwtDecode(access); // Decode new access token
+
       setToken(access);
-      localStorage.setItem('access_token', access);
-      
+      setUser({
+        id: decoded.user_id,
+        email: decoded.email,
+        name: decoded.name,
+      });
+      localStorage.setItem('accessToken', access);
+      localStorage.setItem('userId', String(decoded.user_id)); // Update userId
+
       return access;
     } catch (error) {
       logout();
