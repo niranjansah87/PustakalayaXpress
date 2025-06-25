@@ -20,7 +20,7 @@ const Register: React.FC = () => {
 
     try {
       await register(name, email, password);
-      console.log('Registration successful, redirecting to login');
+      
       navigate('/login');
     } catch (error: unknown) {
       console.error('Registration failed:', error);
@@ -54,10 +54,9 @@ const Register: React.FC = () => {
           <img 
             src="/image.jpg" 
             alt="Pustakalayaexpress" 
-            className="mx-auto mb-4 h-16 w-16 rounded-lg object-cover"
+            className="mx-auto mb-4 h-16 w-full rounded-lg object-cover"
           />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Pustakalayaexpress</h1>
-          <p className="text-gray-600">Books Management System</p>
+          
         </div>
 
         <h2 className="text-xl font-semibold text-center mb-6">Create New Account</h2>

@@ -162,10 +162,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
-          console.log('Received 401, attempting to refresh token');
+        
           try {
             const newToken = await refreshAuthToken();
-            console.log('New token obtained:', newToken);
+            
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return axios(originalRequest);
           } catch (refreshError) {
