@@ -39,7 +39,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load tokens and user data from localStorage on mount
     const storedToken = localStorage.getItem('accessToken');
     const storedRefreshToken = localStorage.getItem('refreshToken');
     const storedUserId = localStorage.getItem('userId');
@@ -47,6 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (storedToken && storedRefreshToken && storedUserId) {
       try {
         const decoded: JwtPayload = jwtDecode(storedToken);
+        console.log('Decoded token on mount:', decoded);
         setToken(storedToken);
         setRefreshToken(storedRefreshToken);
         setUser({
@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           name: decoded.name,
         });
       } catch (error) {
-        console.error('Invalid token:', error);
+        console.error('Invalid token on mount:', error);
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('userId');
@@ -71,8 +71,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       password,
     });
 
+    console.log('Login response:', response.data);
     const { access, refresh } = response.data;
     const decoded: JwtPayload = jwtDecode(access);
+    console.log('Decoded login token:', decoded);
 
     setToken(access);
     setRefreshToken(refresh);
@@ -85,6 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.setItem('accessToken', access);
     localStorage.setItem('refreshToken', refresh);
     localStorage.setItem('userId', String(decoded.user_id));
+    console.log('Stored userId after login:', decoded.user_id);
   };
 
   const register = async (name: string, email: string, password: string) => {
@@ -94,20 +97,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       password,
     });
 
-    const { access, refresh } = response.data;
-    const decoded: JwtPayload = jwtDecode(access);
-
-    setToken(access);
-    setRefreshToken(refresh);
-    setUser({
-      id: decoded.user_id,
-      email: decoded.email,
-      name: decoded.name,
-    });
-
-    localStorage.setItem('accessToken', access);
-    localStorage.setItem('refreshToken', refresh);
-    localStorage.setItem('userId', String(decoded.user_id));
+    console.log('Register response:', response.data);
+    const { message } = response.data;
+    if (message !== 'User registered successfully') {
+      throw new Error(message || 'Registration failed');
+    }
+    console.log('Registration successful, no tokens provided');
   };
 
   const logout = () => {
@@ -117,6 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('userId');
+    console.log('Logged out, localStorage cleared');
   };
 
   const refreshAuthToken = useCallback(async () => {
@@ -134,6 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('Refresh response:', response.data);
     const { access } = response.data;
     const decoded: JwtPayload = jwtDecode(access);
+    console.log('Decoded refresh token:', decoded);
 
     setToken(access);
     setUser({
@@ -147,7 +144,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return access;
   }, [refreshToken]);
 
-  // Set up axios interceptor
   useEffect(() => {
     const requestInterceptor = axios.interceptors.request.use(
       (config) => {
