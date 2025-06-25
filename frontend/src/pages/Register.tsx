@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
+import { ErrorResponse } from '../types/book';
 
 const Register: React.FC = () => {
   const [name, setName] = useState('');
@@ -19,9 +20,28 @@ const Register: React.FC = () => {
 
     try {
       await register(name, email, password);
-      navigate('/books');
-    } catch {
-      setError('Registration failed. Please try again.');
+      console.log('Registration successful, redirecting to login');
+      navigate('/login');
+    } catch (error: unknown) {
+      console.error('Registration failed:', error);
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error instanceof Object && 'response' in error) {
+        const axiosError = error as { response?: { status: number; data: ErrorResponse } };
+        if (axiosError.response?.status === 400) {
+          const errors = axiosError.response.data;
+          if (errors.detail) {
+            errorMessage = errors.detail;
+          } else {
+            const fieldErrors = Object.entries(errors)
+              .map(([field, messages]) => Array.isArray(messages) ? `${field}: ${messages.join(', ')}` : `${field}: ${messages}`)
+              .join('; ');
+            errorMessage = fieldErrors || errorMessage;
+          }
+        }
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -30,14 +50,14 @@ const Register: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-        
         <div className="text-center mb-8">
           <img 
             src="/image.jpg" 
             alt="Pustakalayaexpress" 
-            className="mx-auto mb-4 h-16 w-full rounded-lg object-cover"
+            className="mx-auto mb-4 h-16 w-16 rounded-lg object-cover"
           />
-        
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Pustakalayaexpress</h1>
+          <p className="text-gray-600">Books Management System</p>
         </div>
 
         <h2 className="text-xl font-semibold text-center mb-6">Create New Account</h2>

@@ -18,4 +18,5 @@ export interface BookFormData {
 
 export interface ErrorResponse {
   detail?: string;
+  [key: string]: string[] | string | undefined; 
 }
