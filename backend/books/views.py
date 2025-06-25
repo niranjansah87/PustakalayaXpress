@@ -60,3 +60,16 @@ class BookListByUser(APIView):
         books = Book.objects.filter(created_by=user)
         serializer = BookSerializer(books, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+
+class BookDetail(APIView):
+    def get(self, request, pk):
+        user = get_user_from_token(request)
+        if not user:
+            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        book = get_object_or_404(Book, pk=pk, created_by=user)
+        serializer = BookSerializer(book)
+        return Response(serializer.data, status=status.HTTP_200_OK)
