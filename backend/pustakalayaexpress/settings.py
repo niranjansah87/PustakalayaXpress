@@ -86,29 +86,30 @@ WSGI_APPLICATION = 'pustakalayaexpress.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pustakalayaxpress',
-        'USER': 'root',
-        'PASSWORD': '12345',
-        'HOST': 'localhost',
-        'PORT': '3306',
-    }
-}
-
+# The `DATABASES` setting in Django is used to configure the database connection for your project. In this specific configuration:
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'mssql',
+#         'ENGINE': 'django.db.backends.mysql',
 #         'NAME': 'pustakalayaxpress',
+#         'USER': 'root',
+#         'PASSWORD': '12345',
 #         'HOST': 'localhost',
-#         'OPTIONS': {
-#             'driver': 'ODBC Driver 17 for SQL Server',
-#             'trusted_connection': 'yes',
-#             'trust_server_certificate': 'yes',
-#         },
+#         'PORT': '3306',
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'mssql',
+        'NAME': 'pustakalayaxpress',
+        'HOST': 'localhost',
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+            'trusted_connection': 'yes',
+            'trust_server_certificate': 'yes',
+        },
+    }
+}
 
 
 
