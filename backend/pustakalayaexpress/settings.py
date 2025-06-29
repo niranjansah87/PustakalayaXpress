@@ -98,11 +98,25 @@ WSGI_APPLICATION = 'pustakalayaexpress.wsgi.application'
 #     }
 # }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'mssql',
+#         'NAME': 'pustakalayaxpress',
+#         'HOST': 'localhost',
+#         'OPTIONS': {
+#             'driver': 'ODBC Driver 17 for SQL Server',
+#             'trusted_connection': 'yes',
+#             'trust_server_certificate': 'yes',
+#         },
+#     }
+# }
+
 DATABASES = {
     'default': {
-        'ENGINE': 'mssql',
+        'ENGINE': 'mssql_django',
         'NAME': 'pustakalayaxpress',
-        'HOST': 'localhost',
+        'HOST': 'localhost\\SQLEXPRESS',
+        'PORT': '', 
         'OPTIONS': {
             'driver': 'ODBC Driver 17 for SQL Server',
             'trusted_connection': 'yes',
